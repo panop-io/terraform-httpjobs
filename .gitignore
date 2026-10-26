@@ -2,6 +2,7 @@
 terraform.tfvars
 *.auto.tfvars
 *.auto.tfvars.json
+*.unifr
 !terraform.tfvars.example
 
 # Terraform working dir and state (use remote state in teams if needed)
