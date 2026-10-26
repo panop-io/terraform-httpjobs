@@ -1,0 +1,27 @@
+# Local secrets and per-environment values
+terraform.tfvars
+*.auto.tfvars
+*.auto.tfvars.json
+!terraform.tfvars.example
+
+# Terraform working dir and state (use remote state in teams if needed)
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+
+# Optional local overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# OS / editor noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
