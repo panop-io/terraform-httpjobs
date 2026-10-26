@@ -1,12 +1,26 @@
 # httpjobs agent — Terraform SSH install
 
-Installs and configures the Panop httpjobs agent on remote hosts over SSH.
+Installs or uninstalls the Panop httpjobs agent on remote hosts over SSH.
 
-**Input:** `hosts` in `terraform.tfvars` — one entry per unit with **IP** (`host`), **token**, and **scanner_id**.
+**Input (in `terraform.tfvars`):**
 
-**Fixed in code:** Tower `https://tower.panop.dev`, engine `docker`, SSH `debian@host:22` using your local **ssh-agent** (no password in Terraform).
+- `ssh_user` — SSH login for every host (default `debian`)
+- `agent_mode` — `install` (default) or `uninstall`
+- `panop_token` — Panop API token (install only; used to download the CLI)
+- `hosts` — map of name → **public IP** (`host`) and **scanner UUID** (`scanner_id`)
 
-Each `terraform apply` re-runs the remote install (see `always_run` in `main.tf`).
+**Fixed in code:** Tower `https://tower.panop.dev`, engine `docker`, SSH `user@host:22` via **ssh-agent** (no password in Terraform).
+
+**Install** — removes **panop-svc-httpjobs** Docker containers if present (no error if none), runs `panop-svc-httpjobs install`, requires **`panop-svc-httpjobs.service` active**, then removes those Docker containers again.
+
+**Uninstall** — **systemd only** (no Docker): stop/disable unit, `panop-svc-httpjobs uninstall`, delete unit file; skips quietly if unit missing.
+
+By default, `terraform apply` is **idempotent** (no SSH) until `agent_mode`, `hosts`, token, or Tower settings change. Set `force_reapply_on_every_apply = true` to re-run install/uninstall on every apply.
+
+| `agent_mode` | Effect |
+|--------------|--------|
+| `install` | Systemd agent active; **panop-svc-httpjobs** Docker containers removed (optional cleanup, never fails if absent). |
+| `uninstall` | Systemd unit removed only; **Docker untouched** (e.g. akamai-toolbox stays). |
 
 ## Install Terraform
 
@@ -37,12 +51,12 @@ Other platforms: [Install Terraform](https://developer.hashicorp.com/terraform/i
 
 ## Deploy procedure
 
-1. **SSH access** — Your key must work as `debian` on each host:
+1. **SSH access** — Your key must work as `ssh_user` (e.g. `debian`) on each host:
 
    ```bash
    eval "$(ssh-agent -s)"
    ssh-add ~/.ssh/id_ed25519   # or your key
-   ssh debian@YOUR_HOST
+   ssh debian@YOUR_HOST        # match ssh_user in tfvars
    ```
 
 2. **Configure hosts** — Copy the example file; real values stay local (see `.gitignore`).
@@ -50,7 +64,7 @@ Other platforms: [Install Terraform](https://developer.hashicorp.com/terraform/i
    ```bash
    cd ~/dev/terraform-httpjobs
    cp terraform.tfvars.example terraform.tfvars
-   # edit hosts: host (IP), token, scanner_id
+   # edit ssh_user, agent_mode, panop_token, hosts (IP + scanner_id)
    ```
 
 3. **Init and apply**
